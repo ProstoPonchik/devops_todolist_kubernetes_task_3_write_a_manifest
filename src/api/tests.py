@@ -1,9 +1,36 @@
+from unittest.mock import patch
+
 from django.contrib.auth.models import User
+from django.db import DatabaseError
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from lists.models import TodoList
+
+
+class HealthCheckTests(APITestCase):
+    def test_liveness_returns_ok(self):
+        response = self.client.get("/api/health/liveness/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_readiness_returns_ready(self):
+        response = self.client.get("/api/health/readiness/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), {"status": "ready"})
+
+    @patch("django.core.handlers.base.log_response")
+    @patch("api.views.connection.cursor", side_effect=DatabaseError)
+    def test_readiness_returns_service_unavailable_when_database_fails(
+        self, mocked_cursor, mocked_log_response
+    ):
+        response = self.client.get("/api/health/readiness/")
+
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(response.json(), {"status": "not ready"})
 
 
 class UserTests(APITestCase):

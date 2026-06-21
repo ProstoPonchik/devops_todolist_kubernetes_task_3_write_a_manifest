@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: todoapp-pod
+  namespace: todoapp
+spec:
+  containers:
+    - name: todoapp-container
+      image: prostoponchik/todoapp:3.0.0
+      ports:
+        - containerPort: 8000
+      livenessProbe:
+        httpGet:
+          path: /api/health/liveness/
+          port: 8000
+        initialDelaySeconds: 10
+        periodSeconds: 10
+      readinessProbe:
+        httpGet:
+          path: /api/health/readiness/
+          port: 8000
+        initialDelaySeconds: 10
+        periodSeconds: 10
